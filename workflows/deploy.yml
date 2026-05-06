@@ -10,13 +10,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Inject Secrets into app.js
+      - name: Replace Placeholders
+        uses: cloudposse/github-action-yaml-config-query@0.1.0 # Or use a standard find/replace action
+        # If you prefer keeping it simple with shell, use this rock-solid version:
         run: |
-          # The 'find' command ensures we hit app.js no matter what folder it is in
-          find . -name "app.js" -exec sed -i "s|ZAPIER_WEBHOOK_PLACEHOLDER|${{ secrets.ZAPIER_WEBHOOK_URL }}|g" {} +
-          find . -name "app.js" -exec sed -i "s|FIREBASE_API_KEY_PLACEHOLDER|${{ secrets.FIREBASE_API_KEY }}|g" {} +
-          find . -name "app.js" -exec sed -i "s|FIREBASE_DB_URL_PLACEHOLDER|${{ secrets.FIREBASE_DB_URL }}|g" {} +
-          find . -name "app.js" -exec sed -i "s|FIREBASE_APP_ID_PLACEHOLDER|${{ secrets.FIREBASE_APP_ID }}|g" {} +
+          find kds/ -name "app.js" -exec sed -i "s|SET_API_KEY|${{ secrets.FIREBASE_API_KEY }}|g" {} +
+          find kds/ -name "app.js" -exec sed -i "s|SET_DB_URL|${{ secrets.FIREBASE_DB_URL }}|g" {} +
+          find kds/ -name "app.js" -exec sed -i "s|SET_APP_ID|${{ secrets.FIREBASE_APP_ID }}|g" {} +
+          find kds/ -name "app.js" -exec sed -i "s|ZAPIER_WEBHOOK_PLACEHOLDER|${{ secrets.ZAPIER_WEBHOOK_URL }}|g" {} +
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
