@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>KDS - Orders View</title>
+  <link rel="icon" type="image/png" href="https://drive.google.com/file/d/1gL6AecQhsXs4kAyDY4AhqQdUUBIVqU4J/view?usp=drive_link">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 10px;
+      background: #f5f5f5;
+    }
+    h1 {
+      text-align: center;
+    }
+    .tabs {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 15px;
+    }
+    .tabs button {
+      margin: 0 5px;
+      padding: 6px 12px;
+      font-size: 0.9em;
+      cursor: pointer;
+    }
+    .columns {
+      display: flex;
+      gap: 20px;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      border-top: 2px solid #ccc;
+      padding-top: 10px;
+    }
+    .column {
+      flex: 1;
+      min-width: 300px;
+      max-width: 34%;
+      background: #fff;
+      border-radius: 6px;
+      border-left: 1px solid #ccc;
+      box-shadow: 0 0 5px rgba(0,0,0,0.05);
+      padding-left: 10px;
+    }
+    .column:first-child {
+      border-left: none;
+      padding-left: 0;
+    }
+    .column h2 {
+      border-bottom: 2px solid #ccc;
+      padding-bottom: 5px;
+      margin-bottom: 15px;
+      font-size: 1.3em;
+      text-align: center;
+    }
+    .order-card {
+      background: white;
+      border-radius: 5px;
+      margin-bottom: 15px;
+      padding: 10px;
+      box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    .status-buttons {
+      display: flex;
+      gap: 5px;
+      margin-top: 10px;
+    }
+    button {
+      flex: 1;
+      padding: 5px;
+    }
+    .warning {
+      color: red;
+      font-weight: bold;
+      margin-bottom:10px;
+    }
+    .remake-note {
+      color: #d40000;
+      font-weight: bold;
+      margin-top: 5px;
+    }
+    .saving-note {
+      font-size: 0.9em;
+      color: #888;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Kitchen Display System</h1>
+
+  <div class="tabs">
+    <button onclick="setView('active')">👨‍🍳 Active Orders</button>
+    <button onclick="setView('pickedup')">📦 Picked Up Orders</button>
+  </div>
+
+  <div id="ordersContainer" class="columns"></div>
+
+  <script>
+    let allOrders = [];
+    let currentView = 'active';
+    let lastOrderIDs = new Set();
+
+    function loadOrders() {
+      google.script.run
+        .withSuccessHandler(displayOrders)
+        .withFailureHandler(err => console.error("❌", err))
+        .getOrders();
+    }
+
+    function setView(view) {
+      currentView = view;
+      renderOrders();
+    }
+
+    function displayOrders(response) {
+      if (typeof response === "string") response = JSON.parse(response);
+      
+      const today = new Date().toDateString();
+      const filtered = response.orders.filter(order => {
+        const date = new Date(order.orderReceived);
+        return date.toDateString() === today;
+      });
+
+      const currentIDs = new Set(filtered.map(order => order.orderID));
+      const newOrders = [...currentIDs].filter(id => !lastOrderIDs.has(id));
+
+      if (newOrders.length > 0) {
+        const audio = document.getElementById("newOrderSound");
+        if (audio) audio.play().catch(() => {});
+      }
+
+      lastOrderIDs = currentIDs;
+      allOrders = filtered;
+      renderOrders();
+    }
+
+
+    function renderOrders() {
+      const container = document.getElementById("ordersContainer");
+      container.innerHTML = "";
+
+      const grouped = {};
+      allOrders.forEach(order => {
+        if (!grouped[order.orderID]) grouped[order.orderID] = [];
+        grouped[order.orderID].push(order);
+      });
+
+      const columns = {
+        New: [],
+        Cooking: [],
+        Completed: [],
+        PickedUp: []
+      };
+
+      for (let group of Object.values(grouped)) {
+        const status = group[0].status;
+        if (status === "Picked Up") {
+          if (currentView === "pickedup") columns.PickedUp.push(group);
+        } else if (currentView === "active") {
+          columns[status]?.push(group);
+        }
+      }
+
+      if (currentView === "active") {
+        ["New", "Cooking", "Completed"].forEach(status => {
+          const colDiv = document.createElement("div");
+          colDiv.className = "column";
+          colDiv.innerHTML = `<h2>${status}</h2>`;
+
+          let groups = columns[status];
+          if (status === "Cooking") {
+            groups = groups
+              .sort((a, b) => {
+                const aRemake = a[0].reCookReason?.trim() ? 1 : 0;
+                const bRemake = b[0].reCookReason?.trim() ? 1 : 0;
+                if (bRemake - aRemake !== 0) return bRemake - aRemake;
+                return new Date(a[0].cookingStartTime || 0) - new Date(b[0].cookingStartTime || 0);
+              });
+          } else {
+            groups = groups.sort((a, b) =>
+              new Date(b[0].orderReceived) - new Date(a[0].orderReceived)
+            );
+          }
+
+          groups.forEach(group => colDiv.appendChild(buildCard(group)));
+          container.appendChild(colDiv);
+        });
+      } else if (currentView === "pickedup") {
+        const colDiv = document.createElement("div");
+        colDiv.className = "column";
+        colDiv.innerHTML = `<h2>Picked Up</h2>`;
+        columns.PickedUp.forEach(group => colDiv.appendChild(buildCard(group)));
+        container.appendChild(colDiv);
+      }
+    }
+
+    function buildCard(group) {
+      const order = group[0];
+      const div = document.createElement("div");
+      div.className = "order-card";
+
+      const hasDietary = order.dietaryPreferences?.trim();
+      const isRemake = order.reCookReason?.trim();
+
+      if (hasDietary && isRemake) {
+        div.style.border = "3px solid orange";
+      } else if (hasDietary) {
+        div.style.border = "3px solid red";
+      } else if (isRemake) {
+        div.style.border = "3px solid gold";
+      }
+
+      let leftBtn = "", rightBtn = "";
+      if (order.status === "New") {
+        rightBtn = `<button onclick="updateStatus('${order.orderID}', 'Cooking', this)">🍳 Start Cooking</button>`;
+      } else if (order.status === "Cooking") {
+        leftBtn = `<button onclick="updateStatus('${order.orderID}', 'New', this)">⏪ Back to New</button>`;
+        rightBtn = `<button onclick="updateStatus('${order.orderID}', 'Completed', this)">🥡 Completed</button>`;
+      } else if (order.status === "Completed") {
+        leftBtn = `<button onclick="promptReCook('${order.orderID}')">🔁 Re-Cook</button>`;
+        rightBtn = `<button onclick="updateStatus('${order.orderID}', 'Picked Up', this)">🛍️ Picked Up</button>`;
+      } else if (order.status === "Picked Up") {
+        leftBtn = `<button onclick="promptReCook('${order.orderID}')">🔁 Re-Cook</button>`;
+      }
+
+      const dietary = hasDietary ? `<div class="warning">⚠️ ${order.dietaryPreferences}</div>` : "";
+      const remake = isRemake ? `<div class="remake-note">🔁 Re-cook Reason: ${order.reCookReason}</div>` : "";
+
+      const savingId = `saving-${order.orderID}`;
+
+      div.innerHTML = `
+        ${dietary}
+        <div style="font-weight: bold; font-size: 1.2em; padding: 10px 0; border-bottom: 1px solid darkgray;">
+          ${order.firstName} ${order.lastName} ${isRemake ? "❗" : ""}
+        </div>
+
+        <ul style="padding-left: 20px;">
+          ${group.map(row => `
+            <li style="margin-bottom: 1%;"><strong>${row.filling} ${row.base}</strong>
+            ${row.modifiers ? `<div style="font-style: italic;">${row.modifiers}</div>` : ""}</li>
+          `).join("")}
+        </ul>
+
+        ${remake}
+
+        <div style="margin: 10px 0; padding: 10px 0; border-top: 1px solid darkgray; border-bottom: 1px solid darkgray;">
+          <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+            ${order.orderReceived ? `<div>🕓 ${formatTime(order.orderReceived)}</div>` : ""}
+            ${order.cookingStartTime ? `<div>🔥 ${formatTime(order.cookingStartTime)}</div>` : ""}
+            ${order.cookingEndTime ? `<div>🥡 ${formatTime(order.cookingEndTime)}</div>` : ""}
+            ${order.pickedUpTime ? `<div>🛍️ ${formatTime(order.pickedUpTime)}</div>` : ""}
+          </div>
+        </div>
+
+        <div id="${savingId}" class="saving-note" style="display:none;">💾 Saving...</div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin: 8px 0;">
+          <div style="font-size: 1em; color: #444;">📞 ${order.phoneNumber}</div>
+          <button style="flex: 0 0 auto; padding: 4px 8px;" onclick="promptText('${order.phoneNumber}', '${order.firstName}')">📱 Text</button>
+        </div>
+
+
+        <div class="status-buttons">
+          ${leftBtn}
+          ${rightBtn}
+        </div>
+      `;
+      return div;
+    }
+
+    function updateStatus(orderID, newStatus, button) {
+      button.disabled = true;
+      const saving = document.getElementById(`saving-${orderID}`);
+      if (saving) saving.style.display = "block";
+
+      google.script.run
+        .withSuccessHandler(() => {
+          if (saving) saving.style.display = "none";
+          button.disabled = false;
+          loadOrders();
+        })
+        .withFailureHandler(err => console.error("❌", err))
+        .updateOrderStatus(orderID, newStatus);
+    }
+
+    function promptReCook(orderID) {
+      const reason = prompt("Reason for re-cooking this order?");
+      if (!reason) return;
+
+      const saving = document.getElementById(`saving-${orderID}`);
+      if (saving) saving.style.display = "block";
+
+      google.script.run
+        .withSuccessHandler(() => {
+          if (saving) saving.style.display = "none";
+          loadOrders();
+        })
+        .withFailureHandler(err => console.error("❌", err))
+        .addReCookReason(orderID, reason);
+    }
+
+    function promptText(phone, firstName) {
+      const defaultMsg = `Hi ${firstName}, your order is ready for pickup!`;
+      const message = prompt("Edit message before sending:", defaultMsg);
+      if (!message) return;
+
+      google.script.run
+        .withSuccessHandler(() => alert("✅ Message sent!"))
+        .withFailureHandler(err => alert("❌ Text failed: " + err.message))
+        .sendTextViaZapier(phone, firstName, message);
+    }
+
+    function formatTime(value) {
+      try {
+        return new Date(value).toLocaleTimeString(undefined, {
+          hour: "numeric",
+          minute: "numeric",
+          hour12: true
+        });
+      } catch {
+        return value;
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      document.body.addEventListener("click", () => {
+        const audio = document.getElementById("newOrderSound");
+        if (audio) {
+          audio.play().catch(() => {}); // play once to unlock
+        }
+      }, { once: true });
+
+      setInterval(loadOrders, 5000);
+      loadOrders();
+    });
+
+  </script>
+  <audio id="newOrderSound" src="https://actions.google.com/sounds/v1/transportation/ship_bell.ogg" preload="auto"></audio>
+
+</body>
+</html>
