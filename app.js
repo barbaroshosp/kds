@@ -18,10 +18,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// 3. INITIALIZATION
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
 // 4. VIEW LOGIC
 function setView(view) {
   currentView = view;
