@@ -13,6 +13,10 @@ jobs:
       - name: Inject Secret
         run: |
           sed -i 's|PROD_ZAPIER_URL_PLACEHOLDER|${{ secrets.ZAPIER_WEBHOOK_URL }}|g' app.js
+          sed -i "s|FIREBASE_API_KEY_PLACEHOLDER|${{ secrets.FIREBASE_API_KEY }}|g" app.js
+          sed -i "s|FIREBASE_DB_URL_PLACEHOLDER|${{ secrets.FIREBASE_DB_URL }}|g" app.js
+          sed -i "s|FIREBASE_AUTH_DOMAIN_PLACEHOLDER|${{ secrets.FIREBASE_AUTH_DOMAIN }}|g" app.js
+          sed -i "s|FIREBASE_APP_ID_PLACEHOLDER|${{ secrets.FIREBASE_APP_ID }}|g" app.js
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
