@@ -1,6 +1,6 @@
 // 1. STATE & GLOBAL VARIABLES
 let currentView = 'active';
-let allOrders = [];
+let allOrders = []; 
 
 // 2. CONFIGURATION (Placeholders for GitHub Injection)
 const firebaseConfig = {
