@@ -1,3 +1,11 @@
+function setView(view) {
+  currentView = view;
+  renderOrders(); // This forces the screen to redraw with the new filter
+}
+
+// And ensure you have your initial state defined at the top
+let currentView = 'active';
+
 function formatDate(value) {
   try {
     const date = new Date(value);
