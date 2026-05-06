@@ -10,13 +10,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Inject Secret
+      - name: Inject Secrets into app.js
         run: |
-          sed -i 's|PROD_ZAPIER_URL_PLACEHOLDER|${{ secrets.ZAPIER_WEBHOOK_URL }}|g' kds/app.js
-          sed -i "s|FIREBASE_API_KEY_PLACEHOLDER|${{ secrets.FIREBASE_API_KEY }}|g" kds/app.js
-          sed -i "s|FIREBASE_DB_URL_PLACEHOLDER|${{ secrets.FIREBASE_DB_URL }}|g" kds/app.js
-          sed -i "s|FIREBASE_AUTH_DOMAIN_PLACEHOLDER|${{ secrets.FIREBASE_AUTH_DOMAIN }}|g" kds/app.js
-          sed -i "s|FIREBASE_APP_ID_PLACEHOLDER|${{ secrets.FIREBASE_APP_ID }}|g" kds/app.js
+          # The 'find' command ensures we hit app.js no matter what folder it is in
+          find . -name "app.js" -exec sed -i "s|ZAPIER_WEBHOOK_PLACEHOLDER|${{ secrets.ZAPIER_WEBHOOK_URL }}|g" {} +
+          find . -name "app.js" -exec sed -i "s|FIREBASE_API_KEY_PLACEHOLDER|${{ secrets.FIREBASE_API_KEY }}|g" {} +
+          find . -name "app.js" -exec sed -i "s|FIREBASE_DB_URL_PLACEHOLDER|${{ secrets.FIREBASE_DB_URL }}|g" {} +
+          find . -name "app.js" -exec sed -i "s|FIREBASE_APP_ID_PLACEHOLDER|${{ secrets.FIREBASE_APP_ID }}|g" {} +
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
