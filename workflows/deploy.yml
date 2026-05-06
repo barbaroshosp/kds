@@ -1,0 +1,20 @@
+name: Deploy KDS
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Inject Secret
+        run: |
+          sed -i 's|PROD_ZAPIER_URL_PLACEHOLDER|${{ secrets.ZAPIER_WEBHOOK_URL }}|g' app.js
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: . # The folder your index.html is in
