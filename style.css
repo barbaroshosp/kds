@@ -1,0 +1,95 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 10px;
+  background: #f5f5f5;
+}
+
+h1 {
+  text-align: center;
+}
+
+.tabs {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
+.tabs button {
+  margin: 0 5px;
+  padding: 6px 12px;
+  font-size: 0.9em;
+  cursor: pointer;
+}
+
+.columns {
+  display: flex;
+  gap: 20px;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  border-top: 2px solid #ccc;
+  padding-top: 10px;
+}
+
+.column {
+  flex: 1;
+  min-width: 300px;
+  max-width: 34%;
+  background: #fff;
+  border-radius: 6px;
+  border-left: 1px solid #ccc;
+  box-shadow: 0 0 5px rgba(0,0,0,0.05);
+  padding-left: 10px;
+}
+
+.column:first-child {
+  border-left: none;
+  padding-left: 0;
+}
+
+.column h2 {
+  border-bottom: 2px solid #ccc;
+  padding-bottom: 5px;
+  margin-bottom: 15px;
+  font-size: 1.3em;
+  text-align: center;
+}
+
+.order-card {
+  background: white;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  padding: 10px;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s;
+}
+
+.status-buttons {
+  display: flex;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.status-buttons button {
+  flex: 1;
+  padding: 8px;
+  cursor: pointer;
+}
+
+.warning {
+  color: red;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.remake-note {
+  color: #d40000;
+  font-weight: bold;
+  margin-top: 5px;
+}
+
+.saving-note {
+  font-size: 0.9em;
+  color: #888;
+  margin-top: 5px;
+}
