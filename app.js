@@ -72,7 +72,7 @@ function addReCookReason(orderID, note) {
 }
 
 async function sendTextViaZapier(phone, name, message) {
-  const webhookUrl = 'https://hooks.zapier.com/hooks/catch/2702450/203paqi/';
+  const ZAPIER_WEBHOOK_URL = 'PROD_ZAPIER_URL_PLACEHOLDER';
   
   const response = await fetch(webhookUrl, {
     method: 'POST',
