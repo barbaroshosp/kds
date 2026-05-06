@@ -4,15 +4,19 @@ let allOrders = [];
 
 // 2. CONFIGURATION (Placeholders for GitHub Injection)
 const firebaseConfig = {
-  apiKey: "FIREBASE_API_KEY_PLACEHOLDER",
+  apiKey: "SET_API_KEY",
   authDomain: "tot-kds.firebaseapp.com",
-  databaseURL: "FIREBASE_DB_URL_PLACEHOLDER",
+  databaseURL: "SET_DB_URL",
   projectId: "tot-kds",
   storageBucket: "tot-kds.firebasestorage.app",
   messagingSenderId: "593582447150",
-  appId: "FIREBASE_APP_ID_PLACEHOLDER",
+  appId: "SET_APP_ID",
   measurementId: "G-SR8E9EEB7S"
 };
+
+// 2. INITIALIZATION
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
 // 3. INITIALIZATION
 firebase.initializeApp(firebaseConfig);
