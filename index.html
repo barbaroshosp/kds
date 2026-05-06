@@ -1,27 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KDS - Kitchen Display System</title>
+  <title>KDS</title>
   <link rel="stylesheet" href="style.css">
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-  <script src="app.js"></script>
 </head>
 <body>
-
   <h1>Kitchen Display System</h1>
-
   <div class="tabs">
-    <button onclick="setView('active')">👨‍🍳 Active Orders</button>
-    <button onclick="setView('pickedup')">📦 Picked Up Orders</button>
+    <button onclick="setView('active')">👨‍🍳 Active</button>
+    <button onclick="setView('pickedup')">📦 Picked Up</button>
   </div>
-
   <div id="ordersContainer" class="columns"></div>
 
-  <audio id="newOrderSound" src="https://actions.google.com/sounds/v1/transportation/ship_bell.ogg" preload="auto"></audio>
-
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
