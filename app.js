@@ -72,8 +72,9 @@ function addReCookReason(orderID, note) {
 }
 
 async function sendTextViaZapier(phone, name, message) {
-  const ZAPIER_WEBHOOK_URL = 'PROD_ZAPIER_URL_PLACEHOLDER';
-  
+  // This placeholder will be replaced by GitHub Actions during deployment
+  const webhookUrl = 'ZAPIER_WEBHOOK_PLACEHOLDER';
+
   const response = await fetch(webhookUrl, {
     method: 'POST',
     body: JSON.stringify({ to: phone, name: name, message: message })
