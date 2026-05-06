@@ -1,30 +1,12 @@
-// And ensure you have your initial state defined at the top
+// 1. STATE & GLOBAL VARIABLES
 let currentView = 'active';
+let allOrders = [];
+let lastOrderIDs = new Set();
 
-function setView(view) {
-  currentView = view;
-  renderOrders(); // This forces the screen to redraw with the new filter
-}
-
-function formatDate(value) {
-  try {
-    const date = new Date(value);
-    return date.toLocaleString(undefined, {
-      hour: "numeric",
-      minute: "numeric",
-      hour12: true,
-      month: "short",
-      day: "numeric"
-    });
-  } catch (e) {
-    return value;
-  }
-}
-
-// Replace with your actual Firebase project config
+// 2. CONFIGURATION (Placeholders for GitHub Injection)
 const firebaseConfig = {
   apiKey: "FIREBASE_API_KEY_PLACEHOLDER",
-  authDomain: "FIREBASE_AUTH_DOMAIN_PLACEHOLDER",
+  authDomain: "tot-kds.firebaseapp.com",
   databaseURL: "FIREBASE_DB_URL_PLACEHOLDER",
   projectId: "tot-kds",
   storageBucket: "tot-kds.firebasestorage.app",
@@ -33,26 +15,38 @@ const firebaseConfig = {
   measurementId: "G-SR8E9EEB7S"
 };
 
-// Initialize Firebase
+// 3. INITIALIZATION
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
+// 4. VIEW LOGIC
+function setView(view) {
+  currentView = view;
+  renderOrders(); 
+}
+
+// 5. DATABASE LISTENER
 function listenToOrders() {
   const ordersRef = db.ref('orders');
   
   ordersRef.on('value', (snapshot) => {
     const data = snapshot.val();
-    if (!data) return;
+    if (!data) {
+      allOrders = [];
+      renderOrders();
+      return;
+    }
 
-    // Firebase returns an object of objects. We need an array for your KDS logic.
+    // Convert object to array and include the ID
     const ordersArray = Object.keys(data).map(key => ({
       ...data[key],
-      orderID: key // Using the Firebase unique key as the ID
+      orderID: key 
     }));
 
-    // Filter for today's orders only
+    // Today's filter
     const today = new Date().toDateString();
     allOrders = ordersArray.filter(order => {
+      if (!order.orderReceived) return false;
       const orderDate = new Date(order.orderReceived).toDateString();
       return orderDate === today;
     });
@@ -61,10 +55,9 @@ function listenToOrders() {
   });
 }
 
+// 6. ACTION FUNCTIONS
 function updateStatus(orderID, newStatus, button) {
-  // Disable button to prevent double-clicks
   if (button) button.disabled = true;
-  
   const savingIndicator = document.getElementById(`saving-${orderID}`);
   if (savingIndicator) savingIndicator.style.display = "block";
 
@@ -75,52 +68,53 @@ function updateStatus(orderID, newStatus, button) {
   if (newStatus === "Completed") updates["cookingEndTime"] = now;
   if (newStatus === "Picked Up") updates["pickedUpTime"] = now;
 
-  // Perform the update
   return db.ref('orders/' + orderID).update(updates)
-    .then(() => {
-      console.log(`Order ${orderID} updated to ${newStatus}`);
-      // No need to manually reload orders! 
-      // db.ref().on('value') will trigger automatically.
-    })
-    .catch((error) => {
-      console.error("Update failed:", error);
-      alert("Failed to update status. Check your internet connection.");
-      if (button) button.disabled = false;
-    })
+    .catch(err => alert("Update failed: " + err.message))
     .finally(() => {
       if (savingIndicator) savingIndicator.style.display = "none";
+      if (button) button.disabled = false;
     });
 }
 
 function addReCookReason(orderID, note) {
   const now = new Date().toISOString();
-  const updates = {
+  return db.ref('orders/' + orderID).update({
     "status": "Cooking",
     "reCookReason": note,
     "cookingStartTime": now,
-    "cookingEndTime": null, // Reset these so it appears active
+    "cookingEndTime": null,
     "pickedUpTime": null
-  };
-
-  return db.ref('orders/' + orderID).update(updates);
+  });
 }
 
 async function sendTextViaZapier(phone, name, message) {
-  // This placeholder will be replaced by GitHub Actions during deployment
   const webhookUrl = 'ZAPIER_WEBHOOK_PLACEHOLDER';
-
   const response = await fetch(webhookUrl, {
     method: 'POST',
-    body: JSON.stringify({ to: phone, name: name, message: message })
+    body: JSON.stringify({ to: formatPhoneNumber(phone), name: name, message: message })
   });
-  
   return response.ok ? "✅ Sent" : "❌ Error";
+}
+
+// 7. FORMATTERS
+function formatDate(value) {
+  try {
+    const date = new Date(value);
+    return date.toLocaleString(undefined, {
+      hour: "numeric", minute: "numeric", hour12: true,
+      month: "short", day: "numeric"
+    });
+  } catch (e) { return value; }
 }
 
 function formatPhoneNumber(raw) {
   const digits = raw.replace(/\D/g, '');
   if (digits.length === 10) return `+1${digits}`;
   if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
-  if (raw.startsWith('+')) return raw;
   return `+${digits}`;
 }
+
+// 8. START THE APP
+document.addEventListener("DOMContentLoaded", () => {
+  listenToOrders();
+});
