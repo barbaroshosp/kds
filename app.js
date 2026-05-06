@@ -30,45 +30,70 @@ const db = firebase.database();
 
 function listenToOrders() {
   const ordersRef = db.ref('orders');
+  
   ordersRef.on('value', (snapshot) => {
     const data = snapshot.val();
-    const ordersArray = data ? Object.values(data) : [];
-    renderOrders(ordersArray); // Call your UI render function here
+    if (!data) return;
+
+    // Firebase returns an object of objects. We need an array for your KDS logic.
+    const ordersArray = Object.keys(data).map(key => ({
+      ...data[key],
+      orderID: key // Using the Firebase unique key as the ID
+    }));
+
+    // Filter for today's orders only
+    const today = new Date().toDateString();
+    allOrders = ordersArray.filter(order => {
+      const orderDate = new Date(order.orderReceived).toDateString();
+      return orderDate === today;
+    });
+
+    renderOrders(); 
   });
 }
 
-function updateOrderStatus(orderID, newStatus) {
+function updateStatus(orderID, newStatus, button) {
+  // Disable button to prevent double-clicks
+  if (button) button.disabled = true;
+  
+  const savingIndicator = document.getElementById(`saving-${orderID}`);
+  if (savingIndicator) savingIndicator.style.display = "block";
+
   const now = new Date().toISOString();
-  const updates = {
-    "status": newStatus
-  };
+  const updates = { "status": newStatus };
 
   if (newStatus === "Cooking") updates["cookingStartTime"] = now;
   if (newStatus === "Completed") updates["cookingEndTime"] = now;
   if (newStatus === "Picked Up") updates["pickedUpTime"] = now;
 
-  return db.ref('orders/' + orderID).update(updates);
+  // Perform the update
+  return db.ref('orders/' + orderID).update(updates)
+    .then(() => {
+      console.log(`Order ${orderID} updated to ${newStatus}`);
+      // No need to manually reload orders! 
+      // db.ref().on('value') will trigger automatically.
+    })
+    .catch((error) => {
+      console.error("Update failed:", error);
+      alert("Failed to update status. Check your internet connection.");
+      if (button) button.disabled = false;
+    })
+    .finally(() => {
+      if (savingIndicator) savingIndicator.style.display = "none";
+    });
 }
 
 function addReCookReason(orderID, note) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("KDS Orders");
-  const data = sheet.getDataRange().getValues();
-  const headers = data[0];
+  const now = new Date().toISOString();
+  const updates = {
+    "status": "Cooking",
+    "reCookReason": note,
+    "cookingStartTime": now,
+    "cookingEndTime": null, // Reset these so it appears active
+    "pickedUpTime": null
+  };
 
-  const statusCol = headers.indexOf("Status");
-  const orderIdCol = headers.indexOf("Order ID");
-  const recookCol = headers.indexOf("Re-Cook Reason");
-  const cookingStartCol = headers.indexOf("Cooking Start Time");
-
-  const now = new Date();
-
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][orderIdCol] == orderID) {
-      sheet.getRange(i + 1, statusCol + 1).setValue("Cooking");
-      sheet.getRange(i + 1, recookCol + 1).setValue(note);
-      sheet.getRange(i + 1, cookingStartCol + 1).setValue(now);
-    }
-  }
+  return db.ref('orders/' + orderID).update(updates);
 }
 
 async function sendTextViaZapier(phone, name, message) {
