@@ -15,13 +15,13 @@ function formatDate(value) {
 
 // Replace with your actual Firebase project config
 const firebaseConfig = {
-  apiKey: "AIzaSyC-5mPhJsV9-eYpzIoXlx1Snmv26-rC7lU",
-  authDomain: "tot-kds.firebaseapp.com",
-  databaseURL: "https://tot-kds-default-rtdb.firebaseio.com",
+  apiKey: "FIREBASE_API_KEY_PLACEHOLDER",
+  authDomain: "FIREBASE_AUTH_DOMAIN_PLACEHOLDER",
+  databaseURL: "FIREBASE_DB_URL_PLACEHOLDER",
   projectId: "tot-kds",
   storageBucket: "tot-kds.firebasestorage.app",
   messagingSenderId: "593582447150",
-  appId: "1:593582447150:web:e4a084f525c8c9234fddbf",
+  appId: "FIREBASE_APP_ID_PLACEHOLDER",
   measurementId: "G-SR8E9EEB7S"
 };
 
